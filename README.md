@@ -1,4 +1,4 @@
-# Med Guid DZ 🏥
+<!-- # Med Guid DZ 🏥
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -108,4 +108,4 @@ npm run deploy
 
 ---
 
-**صنع بـ ❤️ بواسطة أحمد الطيبي — جامعة ورقلة**
+**صنع بـ ❤️ بواسطة أحمد الطيبي — جامعة ورقلة** -->
