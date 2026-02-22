@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { years } from '@data/academicData';
+// MODIFIED: removed static academicData import — search now reads from admin store
 
 /**
  * Main application store with slices:
@@ -89,8 +89,9 @@ const useAppStore = create(
 
             /**
              * Fuzzy search across all years/modules in the new data shape.
+             * MODIFIED: now async — reads from admin store for live admin data
              */
-            runSearch: () => {
+            runSearch: async () => {
                 const { query } = get();
                 if (!query.trim()) {
                     set({ results: [] });
@@ -100,7 +101,11 @@ const useAppStore = create(
                 const q = query.toLowerCase().trim();
                 const results = [];
 
-                years.forEach((year) => {
+                // MODIFIED: read from admin store so search includes admin-edited data
+                const { default: adminStore } = await import('@store/useAdminStore');
+                const storeData = adminStore.getState().data;
+
+                storeData.forEach((year) => {
                     const allMods = getAllModulesForYear(year);
                     allMods.forEach((mod) => {
                         if (mod.title === 'TO_BE_FILLED') return;

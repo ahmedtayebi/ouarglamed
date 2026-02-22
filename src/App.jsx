@@ -10,11 +10,18 @@ import ContentPanel from '@components/Layout/ContentPanel';
 import ModuleDrawer from '@components/Drawer/ModuleDrawer';
 
 const Home = lazy(() => import('@pages/Home'));
-const YearsPage = lazy(() => import('@pages/YearsPage'));
+// REMOVED: YearsPage import — big cards page eliminated
 const StudyZonePage = lazy(() => import('@pages/StudyZonePage'));
 const About = lazy(() => import('@pages/About'));
 const Resources = lazy(() => import('@pages/Resources'));
 const NotFound = lazy(() => import('@pages/NotFound'));
+
+// ADDED: Admin page lazy imports
+const AdminLogin = lazy(() => import('@admin/AdminLogin'));
+const AdminGuard = lazy(() => import('@admin/AdminGuard'));
+const AdminLayout = lazy(() => import('@admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('@admin/pages/AdminDashboard'));
+const AdminYearPage = lazy(() => import('@admin/pages/AdminYearPage'));
 
 /**
  * Loading fallback.
@@ -119,12 +126,38 @@ const router = createBrowserRouter([
         element: <RootLayout />,
         children: [
             { index: true, element: <Home /> },
-            { path: 'years', element: <YearsPage /> },
+            { path: 'year', element: <StudyZone /> }, // MODIFIED: /year shows sidebar layout directly (no big cards)
             { path: 'study-zone', element: <StudyZonePage /> },
             { path: 'year/:yearId', element: <StudyZone /> },
             { path: 'about', element: <About /> },
             { path: 'resources', element: <Resources /> },
             { path: '*', element: <NotFound /> },
+        ],
+    },
+    // ADDED: Admin routes — completely separate from main site
+    {
+        path: '/admin/login',
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <AdminLogin />
+            </Suspense>
+        ),
+    },
+    {
+        path: '/admin',
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <AdminGuard />
+            </Suspense>
+        ),
+        children: [
+            {
+                element: <AdminLayout />,
+                children: [
+                    { index: true, element: <AdminDashboard /> },
+                    { path: 'year/:yearId', element: <AdminYearPage /> },
+                ],
+            },
         ],
     },
 ]);

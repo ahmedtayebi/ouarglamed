@@ -1,9 +1,9 @@
 // PATH: src/components/Layout/YearSidebar.jsx
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // MODIFIED: added AnimatePresence for icon transitions
 import * as Icons from 'lucide-react';
-import { years } from '@data/academicData';
+import useAdminStore from '@store/useAdminStore'; // MODIFIED: reads from store — reflects admin changes instantly
 
 /**
  * Year selector sidebar (desktop) / horizontal tabs (mobile).
@@ -12,7 +12,8 @@ import { years } from '@data/academicData';
 const YearSidebar = () => {
     const navigate = useNavigate();
     const { yearId } = useParams();
-    const activeYear = yearId || 'year-1';
+    const { data: years } = useAdminStore(); // MODIFIED: reads from store instead of static file
+    const activeYear = yearId ? `year-${yearId}` : null; // MODIFIED: no default — null when no year in URL
 
     const handleYearClick = (id) => {
         const numId = id.replace('year-', '');
@@ -64,7 +65,7 @@ const YearSidebar = () => {
                             onClick={() => handleYearClick(year.id)}
                             whileHover={{ x: -4 }}
                             className={`relative flex items-center gap-3 w-full px-4 py-3.5 rounded-xl font-bold text-sm text-right
-                transition-all duration-300
+                transition-colors duration-300
                 ${isActive
                                     ? 'text-white shadow-lg'
                                     : 'bg-white/5 dark:bg-navy-800/40 text-navy-600 dark:text-navy-300 border border-white/10 hover:bg-white/10 dark:hover:bg-navy-700/50'
@@ -73,19 +74,33 @@ const YearSidebar = () => {
                             aria-selected={isActive}
                             role="tab"
                         >
+                            {/* MODIFIED: replaced broken left-0 white bar with smooth sliding background indicator */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeYearBg"
+                                    className="absolute inset-y-1 right-1 w-1 rounded-full bg-white/60"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                                />
+                            )}
+
+                            {/* MODIFIED: icon now fades+scales smoothly on year change */}
                             <div
                                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0
                   ${isActive ? 'bg-white/20' : 'bg-white/5'}`}
                             >
-                                <IconComp size={18} aria-hidden="true" />
+                                <AnimatePresence mode="wait">
+                                    <motion.span
+                                        key={year.id + (isActive ? '-active' : '-inactive')}
+                                        initial={{ opacity: 0, scale: 0.6 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.6 }}
+                                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                                    >
+                                        <IconComp size={18} aria-hidden="true" />
+                                    </motion.span>
+                                </AnimatePresence>
                             </div>
                             <span>{year.label}</span>
-                            {isActive && (
-                                <motion.div
-                                    layoutId="year-indicator"
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-white/60"
-                                />
-                            )}
                         </motion.button>
                     );
                 })}

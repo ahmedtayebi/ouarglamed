@@ -1,7 +1,8 @@
 // PATH: src/components/Layout/ContentPanel.jsx
 
 import { useParams } from 'react-router-dom';
-import { years } from '@data/academicData';
+import { ArrowLeft } from 'lucide-react'; // ADDED: arrow icon for placeholder
+import useAdminStore from '@store/useAdminStore'; // MODIFIED: reads from store — reflects admin changes instantly
 import SemesterView from '@components/Content/SemesterView';
 import UnitView from '@components/Content/UnitView';
 
@@ -10,8 +11,21 @@ import UnitView from '@components/Content/UnitView';
  */
 const ContentPanel = () => {
     const { yearId } = useParams();
-    const numId = yearId || '1';
-    const year = years.find((y) => y.id === `year-${numId}`);
+    const { data: years } = useAdminStore(); // MODIFIED: reads from store instead of static file
+
+    // ADDED: show placeholder when no year is selected (on /year with no param)
+    if (!yearId) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center py-32 gap-4">
+                <ArrowLeft size={40} className="text-navy-400 dark:text-navy-500" />
+                <p className="text-lg text-navy-400 dark:text-navy-500 font-semibold">
+                    اختر سنة دراسية من القائمة
+                </p>
+            </div>
+        );
+    }
+
+    const year = years.find((y) => y.id === `year-${yearId}`); // MODIFIED: uses store data
 
     if (!year) {
         return (

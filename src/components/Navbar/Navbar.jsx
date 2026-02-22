@@ -19,7 +19,7 @@ const Navbar = () => {
 
     const isActive = (path) => {
         if (path === '/') return location.pathname === '/';
-        if (path === '/years') return location.pathname === '/years';
+        if (path === '/year') return location.pathname.startsWith('/year'); // MODIFIED: match /year and /year/:id
         if (path === '/study-zone') return location.pathname === '/study-zone';
         return location.pathname.startsWith(path);
     };

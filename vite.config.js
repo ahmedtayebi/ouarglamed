@@ -12,6 +12,7 @@ export default defineConfig({
             '@hooks': resolve(__dirname, './src/hooks'),
             '@store': resolve(__dirname, './src/store'),
             '@assets': resolve(__dirname, './src/assets'),
+            '@admin': resolve(__dirname, './src/admin'), // ADDED: admin folder alias
         },
     },
     base: './',

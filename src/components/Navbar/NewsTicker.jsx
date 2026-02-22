@@ -28,7 +28,7 @@ const NewsTicker = () => {
             <div
                 className="flex whitespace-nowrap"
                 style={{
-                    animation: `ticker 30s linear infinite`,
+                    animation: `ticker 45s linear infinite`, // MODIFIED: slowed from 30s to 45s for comfortable reading
                     animationPlayState: isPaused ? 'paused' : 'running',
                     animationDirection: 'reverse',
                 }}

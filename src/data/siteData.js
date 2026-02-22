@@ -16,7 +16,7 @@ const siteData = {
     nav: {
         links: [
             { id: 'home', label: 'الرئيسية', path: '/' },
-            { id: 'years', label: 'السنوات', path: '/years' },
+            { id: 'years', label: 'السنوات', path: '/year' }, // MODIFIED: skip big cards, go directly to sidebar layout
             { id: 'study-zone', label: 'منطقة الدراسة', path: '/study-zone' },
             { id: 'resources', label: 'المصادر', path: '/resources' },
             { id: 'about', label: 'من نحن', path: '/about' },
