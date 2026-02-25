@@ -14,8 +14,11 @@ import {
     Menu,
     X,
     Cross,
+    Save, // ADDED
+    Loader2 // ADDED
 } from 'lucide-react';
 import { AUTH_KEY } from '@admin/adminConfig';
+import useAdminStore from '@store/useAdminStore'; // ADDED
 
 // ADDED: sidebar navigation items
 const sidebarItems = [
@@ -29,6 +32,9 @@ const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+
+    // ADDED: Pull state and save function from store
+    const { hasUnsavedChanges, isSaving, saveChanges } = useAdminStore();
 
     // ADDED: check if a sidebar item is active
     const isActive = (path) => {
@@ -109,14 +115,43 @@ const AdminLayout = () => {
                     </div>
                 </div>
 
-                {/* ADDED: Logout button */}
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-bold text-sm transition-all duration-200"
-                >
-                    <LogOut size={16} />
-                    <span className="hidden sm:inline">خروج</span>
-                </button>
+                {/* ADDED: Actions block */}
+                <div className="flex items-center gap-2">
+                    {/* ADDED: Save Button */}
+                    <AnimatePresence>
+                        <motion.button
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={async () => {
+                                    // MODIFIED: [run page-specific pre-save hook before global save]
+                                    if (typeof window.__adminYearHandleSaveChanges === 'function') {
+                                        const ok = await window.__adminYearHandleSaveChanges();
+                                        if (ok === false) return;
+                                    }
+                                    await saveChanges();
+                                }}
+                                disabled={isSaving || !hasUnsavedChanges}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-sm transition-all duration-200
+                                    ${hasUnsavedChanges
+                                        ? 'bg-accent-500 hover:bg-accent-600 shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                                        : 'bg-accent-500/35 hover:bg-accent-500/35 shadow-none'
+                                    } disabled:opacity-50`}
+                            >
+                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                <span className="hidden sm:inline">{isSaving ? 'جاري الحفظ...' : 'حفظ التعديلات'}</span>
+                        </motion.button>
+                    </AnimatePresence>
+
+                    {/* ADDED: Logout button */}
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-bold text-sm transition-all duration-200"
+                    >
+                        <LogOut size={16} />
+                        <span className="hidden sm:inline">خروج</span>
+                    </button>
+                </div>
             </header>
 
             {/* ADDED: Mobile sidebar overlay */}

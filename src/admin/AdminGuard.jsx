@@ -1,7 +1,9 @@
 // PATH: src/admin/AdminGuard.jsx
 // ADDED: Auth wrapper that protects all admin routes
 
-import { Navigate, Outlet } from 'react-router-dom';
+// MODIFIED: token checked ONCE on mount only
+import { useEffect, useRef } from 'react';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { AUTH_KEY } from '@admin/adminConfig';
 
 /**
@@ -9,14 +11,21 @@ import { AUTH_KEY } from '@admin/adminConfig';
  * If no token → redirects to /admin/login.
  * Wraps all admin routes.
  */
-const AdminGuard = () => {
-    const token = sessionStorage.getItem(AUTH_KEY);
+export default function AdminGuard() {
+    const navigate = useNavigate();
+    const checked = useRef(false);
+    const isAuthed = useRef(false);
 
-    if (!token) {
-        return <Navigate to="/admin/login" replace />; // ADDED: redirect to login if no token
+    if (!checked.current) {
+        checked.current = true;
+        const token = sessionStorage.getItem(AUTH_KEY);
+        isAuthed.current = !!token;
+        if (!token) {
+            // navigate on next tick to avoid render issues
+            setTimeout(() => navigate('/admin/login'), 0);
+        }
     }
 
+    if (!isAuthed.current) return null;
     return <Outlet />; // ADDED: render child admin routes if authenticated
-};
-
-export default AdminGuard;
+}

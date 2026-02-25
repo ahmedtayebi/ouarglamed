@@ -13,6 +13,7 @@ import {
     ExternalLink,
     AlertCircle,
     ChevronLeft,
+    Loader2
 } from 'lucide-react';
 import {
     DndContext,
@@ -29,6 +30,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import useAdminStore from '@store/useAdminStore';
+import { years as staticYears } from '@data/academicData'; // ADDED: Static academic data for structure lookup
+import toast from 'react-hot-toast';
+import { api } from '@services/api';
 
 /* ━━━━━━━━━━━━━━━━━ Sortable Row Wrapper ━━━━━━━━━━━━━━━━━ */
 
@@ -48,11 +52,17 @@ const SortableItem = ({ id, children }) => {
 
 /* ━━━━━━━━━━━━━━━━━ Inline Editable Name ━━━━━━━━━━━━━━━━━ */
 
-const InlineEdit = ({ value, onSave, placeholder = 'أدخل الاسم' }) => {
+const InlineEdit = ({ value, onSave, placeholder = 'أدخل الاسم', autoEdit = false, onAutoEditStart }) => {
     const [editing, setEditing] = useState(false);
     const [text, setText] = useState(value || '');
 
     useEffect(() => { setText(value || ''); }, [value]);
+    useEffect(() => {
+        if (autoEdit) {
+            setEditing(true);
+            if (onAutoEditStart) onAutoEditStart();
+        }
+    }, [autoEdit, onAutoEditStart]);
 
     const handleBlur = () => {
         setEditing(false);
@@ -152,10 +162,12 @@ const ContentRow = ({ item, onUpdate, onDelete, titlePlaceholder }) => {
 
 const ColumnHeader = ({ title, count }) => (
     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <h3 className="font-bold text-white text-sm">{title}</h3>
-        {count !== undefined && (
-            <span className="text-xs text-navy-400 bg-navy-800/60 px-2.5 py-1 rounded-full">{count}</span>
-        )}
+        <div className="flex items-center gap-2">
+            <h3 className="font-bold text-white text-sm">{title}</h3>
+            {count !== undefined && (
+                <span className="text-xs text-navy-400 bg-navy-800/60 px-2.5 py-1 rounded-full">{count}</span>
+            )}
+        </div>
     </div>
 );
 
@@ -164,10 +176,21 @@ const ColumnHeader = ({ title, count }) => (
 const AdminYearPage = () => {
     const { yearId } = useParams();
     const store = useAdminStore();
-    const year = store.data.find((y) => y.id === yearId);
+    const { data: years, isLoading, error, loadData } = store;
+
+    // MODIFIED: [single loadData call only]
+    useEffect(() => {
+        loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const year = years.find((y) => y.id === yearId);
 
     const [selectedContainer, setSelectedContainer] = useState(null); // ADDED: selected unit/semester
     const [selectedModule, setSelectedModule] = useState(null); // ADDED: selected module
+    const [autoEditModuleId, setAutoEditModuleId] = useState(null);
+    const [showAddModuleForm, setShowAddModuleForm] = useState(false);
+    const [pendingNewModule, setPendingNewModule] = useState(null); // MODIFIED: [store pending module locally until main save]
     const [activeTab, setActiveTab] = useState('lessons'); // ADDED: lessons or exams tab
 
     // ADDED: dnd sensors
@@ -177,17 +200,18 @@ const AdminYearPage = () => {
     useEffect(() => {
         setSelectedContainer(null);
         setSelectedModule(null);
+        setShowAddModuleForm(false);
+        setPendingNewModule(null);
     }, [yearId]);
 
-    if (!year) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <p className="text-navy-400 text-lg">السنة غير موجودة</p>
-            </div>
-        );
-    }
+    useEffect(() => {
+        setShowAddModuleForm(false);
+        setPendingNewModule(null);
+    }, [selectedContainer]);
 
-    const isSemesters = year.structure === 'semesters';
+    // MODIFIED: Read structure from static data, not API year, to ensure bug-free UI layout
+    const staticYearData = staticYears.find(y => y.id === yearId);
+    const isSemesters = staticYearData?.structure === 'semesters';
 
     // ADDED: get containers (semesters or units)
     const containers = isSemesters ? year.semesters : year.units || [];
@@ -200,6 +224,7 @@ const AdminYearPage = () => {
             : (year.units || []).find((u) => u.id === selectedContainer);
         return container?.modules || [];
     };
+    const selectedModuleId = selectedModule?.id || selectedModule; // MODIFIED: [normalize selected module shape]
 
     // ADDED: get selected module data
     const getSelectedModule = () => {
@@ -207,11 +232,14 @@ const AdminYearPage = () => {
 
         // Check standalone modules first
         if (selectedContainer === '__standalone__') {
-            return (year.standaloneModules || []).find((m) => m.id === selectedModule);
+            return (year.standaloneModules || []).find((m) => m.id === selectedModuleId);
         }
 
         const modules = getModules();
-        return modules.find((m) => m.id === selectedModule);
+        if (selectedModule && typeof selectedModule === 'object' && selectedModule.id) {
+            return modules.find((m) => m.id === selectedModule.id) || selectedModule; // MODIFIED: [resolve clicked object directly]
+        }
+        return modules.find((m) => m.id === selectedModuleId);
     };
 
     const currentModule = getSelectedModule();
@@ -226,6 +254,102 @@ const AdminYearPage = () => {
         const newOrder = arrayMove(ids, oldIdx, newIdx);
         store.reorderUnits(yearId, newOrder);
     };
+
+    const selectedSemesterId = selectedContainer; // MODIFIED: [explicit semester id alias for save debug]
+
+    const handleModuleClick = (module) => {
+        // MODIFIED: [debug module selection]
+        console.log('=== MODULE CLICKED ===', module);
+        setSelectedModule(module);
+    };
+
+    const handleDelete = async (moduleId) => {
+        // MODIFIED: [debug delete]
+        console.log('=== DELETE MODULE ===', moduleId);
+        const token = sessionStorage.getItem('medguid-admin-token');
+        const result = await api.delete(`/api/years/modules/${moduleId}`, token);
+        console.log('=== DELETE RESULT ===', result);
+        if (result?.error) {
+            toast.error('❌ فشل الحذف: ' + result.error);
+            return;
+        }
+        await loadData();
+        toast.success('✅ تم الحذف');
+    };
+
+    const handleSaveChanges = async () => {
+        // MODIFIED: [debug save]
+        console.log('=== SAVE CHANGES CLICKED ===');
+        console.log('pendingNewModule:', pendingNewModule);
+        console.log('selectedSemesterId:', selectedSemesterId);
+
+        if (!pendingNewModule) return true;
+        if (!pendingNewModule?.title?.trim()) {
+            toast.error('اكتب اسم الموديل أولاً');
+            return false;
+        }
+        const token = sessionStorage.getItem('medguid-admin-token');
+        console.log('token exists:', !!token);
+        const result = await api.post(
+            `/api/semesters/${selectedSemesterId}/modules`,
+            {
+                title: pendingNewModule.title,
+                isShared: pendingNewModule.type === 'مشترك'
+            },
+            token
+        );
+        console.log('=== SAVE RESULT ===', result);
+        if (result?.error) {
+            toast.error('❌ فشل الحفظ: ' + result.error);
+            return false;
+        }
+        setPendingNewModule(null);
+        setShowAddModuleForm(false);
+        await loadData();
+        toast.success('✅ تم الحفظ');
+        return true;
+    };
+
+    const handleAddLesson = async () => {
+        // MODIFIED: [add lesson row directly in content panel without prompt]
+        if (!selectedModuleId) {
+            toast.error('اختر موديل أولاً');
+            return;
+        }
+        await store.addLesson(yearId, selectedContainer, selectedModuleId);
+    };
+
+    useEffect(() => {
+        // MODIFIED: [allow top save button to execute pending module save first]
+        window.__adminYearHandleSaveChanges = handleSaveChanges;
+        return () => { delete window.__adminYearHandleSaveChanges; };
+    }, [handleSaveChanges]);
+
+    // ADDED: load/error states
+    if (isLoading && years.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 size={40} className="text-primary-500 animate-spin" />
+                <p className="text-lg text-navy-400 font-semibold">جاري تحميل البيانات...</p>
+            </div>
+        );
+    }
+
+    if (error && years.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <p className="text-lg text-red-500 font-semibold">خطأ في تحميل البيانات</p>
+            </div>
+        );
+    }
+
+    if (!year) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <p className="text-navy-400 text-lg">السنة غير موجودة</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -255,10 +379,13 @@ const AdminYearPage = () => {
                         count={containers.length}
                     />
 
-                    {/* ADDED: Standalone modules section (Year 2 only) */}
-                    {!isSemesters && (year.standaloneModules || []).length > 0 && (
+                    {/* ADDED: Standalone modules section for unit-based years */}
+                    {!isSemesters && (
                         <div className="p-3 border-b border-white/5">
                             <p className="text-xs text-navy-500 font-bold mb-2 px-1">موديلات مستقلة</p>
+                            {(year.standaloneModules || []).length === 0 && (
+                                <p className="text-xs text-navy-500 px-1 py-1 mb-2">لا توجد موديلات مستقلة بعد</p>
+                            )}
                             {(year.standaloneModules || []).map((mod) => (
                                 <button
                                     key={mod.id}
@@ -267,7 +394,7 @@ const AdminYearPage = () => {
                                         setSelectedModule(mod.id);
                                     }}
                                     className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-1
-                                        ${selectedContainer === '__standalone__' && selectedModule === mod.id
+                                        ${selectedContainer === '__standalone__' && selectedModuleId === mod.id
                                             ? 'bg-primary-500/15 text-primary-400 border border-primary-500/20'
                                             : 'text-navy-300 hover:bg-white/5 border border-transparent'
                                         }`}
@@ -277,9 +404,23 @@ const AdminYearPage = () => {
                                         value={mod.title}
                                         onSave={(val) => store.renameStandaloneModule(yearId, mod.id, val)}
                                         placeholder="اسم الموديل"
+                                        autoEdit={autoEditModuleId === mod.id}
+                                        onAutoEditStart={() => setAutoEditModuleId(null)}
                                     />
                                 </button>
                             ))}
+                            <button
+                                onClick={async () => {
+                                    const newId = await store.addStandaloneModule(yearId);
+                                    setSelectedContainer('__standalone__');
+                                    setSelectedModule(newId);
+                                    setAutoEditModuleId(newId);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-400 bg-amber-500/5 border border-dashed border-amber-500/30 hover:bg-amber-500/10 transition-all mt-2"
+                            >
+                                <Plus size={15} />
+                                إضافة موديل مستقل
+                            </button>
                         </div>
                     )}
 
@@ -293,6 +434,7 @@ const AdminYearPage = () => {
                                     onClick={() => {
                                         setSelectedContainer(sem.id);
                                         setSelectedModule(null);
+                                        setShowAddModuleForm(false);
                                     }}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all mb-1
                                         ${selectedContainer === sem.id
@@ -320,6 +462,7 @@ const AdminYearPage = () => {
                                                     onClick={() => {
                                                         setSelectedContainer(unit.id);
                                                         setSelectedModule(null);
+                                                        setShowAddModuleForm(false);
                                                     }}
                                                 >
                                                     <span {...listeners} className="cursor-grab text-navy-500 hover:text-navy-300 p-1">
@@ -384,9 +527,9 @@ const AdminYearPage = () => {
                                 {getModules().map((mod) => (
                                     <div
                                         key={mod.id}
-                                        onClick={() => setSelectedModule(mod.id)}
+                                        onClick={() => handleModuleClick(mod)}
                                         className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-1 cursor-pointer
-                                            ${selectedModule === mod.id
+                                            ${selectedModuleId === mod.id
                                                 ? 'bg-primary-500/15 text-primary-400 border border-primary-500/20'
                                                 : 'text-navy-300 hover:bg-white/5 border border-transparent'
                                             }`}
@@ -396,6 +539,8 @@ const AdminYearPage = () => {
                                                 value={mod.title}
                                                 onSave={(val) => store.renameModule(yearId, selectedContainer, mod.id, val)}
                                                 placeholder="اسم الموديل"
+                                                autoEdit={autoEditModuleId === mod.id}
+                                                onAutoEditStart={() => setAutoEditModuleId(null)}
                                             />
                                         </span>
 
@@ -420,8 +565,8 @@ const AdminYearPage = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                store.deleteModule(yearId, selectedContainer, mod.id);
-                                                if (selectedModule === mod.id) setSelectedModule(null);
+                                                handleDelete(mod.id);
+                                                if (selectedModuleId === mod.id) setSelectedModule(null);
                                             }}
                                             className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors shrink-0"
                                             title="حذف الموديل"
@@ -432,12 +577,80 @@ const AdminYearPage = () => {
                                 ))}
 
                                 <button
-                                    onClick={() => store.addModule(yearId, selectedContainer)}
+                                    onClick={async () => {
+                                        if (isSemesters) {
+                                            if (showAddModuleForm) return;
+                                            setShowAddModuleForm(true);
+                                            setPendingNewModule({ title: '', type: 'خاص' }); // MODIFIED: [create local pending module only]
+                                            return;
+                                        }
+                                        const newId = await store.addModule(yearId, selectedContainer);
+                                        setSelectedModule(newId);
+                                        setAutoEditModuleId(newId);
+                                    }}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-primary-400 bg-primary-500/5 border border-dashed border-primary-500/20 hover:bg-primary-500/10 transition-all mt-2"
                                 >
                                     <Plus size={16} />
                                     إضافة موديل
                                 </button>
+
+                                {isSemesters && showAddModuleForm && (
+                                    <div className="mt-2 p-3 rounded-xl border border-white/10 bg-navy-900/40 space-y-2">
+                                        <div className="relative">
+                                            <input
+                                                value={pendingNewModule?.title || ''}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setPendingNewModule((prev) => ({
+                                                        ...(prev || { type: 'خاص' }),
+                                                        title: value
+                                                    }));
+                                                }}
+                                                placeholder="اسم الموديل"
+                                                className="w-full bg-navy-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-500 focus:outline-none focus:border-primary-500 transition-colors"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    setShowAddModuleForm(false);
+                                                    setPendingNewModule(null);
+                                                }}
+                                                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md bg-white/5 text-navy-300 hover:bg-white/10 transition-colors"
+                                                title="إلغاء"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        {/* MODIFIED: replaced select with toggle buttons */}
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    const nextShared = false;
+                                                    setPendingNewModule((prev) => ({
+                                                        ...(prev || { title: '' }),
+                                                        type: nextShared ? 'مشترك' : 'خاص'
+                                                    }));
+                                                }}
+                                                className={(pendingNewModule?.type || 'خاص') === 'خاص'
+                                                    ? 'flex-1 bg-teal-500 text-white px-4 py-2 rounded-lg font-bold transition-colors'
+                                                    : 'flex-1 bg-navy-700 text-navy-300 px-4 py-2 rounded-lg font-bold hover:bg-navy-600 transition-colors'
+                                                }
+                                            >خاص</button>
+                                            <button
+                                                onClick={async () => {
+                                                    const nextShared = true;
+                                                    setPendingNewModule((prev) => ({
+                                                        ...(prev || { title: '' }),
+                                                        type: nextShared ? 'مشترك' : 'خاص'
+                                                    }));
+                                                }}
+                                                className={(pendingNewModule?.type || 'خاص') === 'مشترك'
+                                                    ? 'flex-1 bg-teal-500 text-white px-4 py-2 rounded-lg font-bold transition-colors'
+                                                    : 'flex-1 bg-navy-700 text-navy-300 px-4 py-2 rounded-lg font-bold hover:bg-navy-600 transition-colors'
+                                                }
+                                            >مشترك</button>
+                                        </div>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -445,7 +658,9 @@ const AdminYearPage = () => {
 
                 {/* ━━━━━━━━━━━ COLUMN 3: Lessons & Exams ━━━━━━━━━━━ */}
                 <div className="bg-navy-900/60 border border-white/5 rounded-2xl overflow-hidden">
-                    <ColumnHeader title="المحتوى" />
+                    <ColumnHeader
+                        title="المحتوى"
+                    />
 
                     {!currentModule ? (
                         <p className="text-navy-500 text-sm text-center py-8 px-3">
@@ -487,16 +702,16 @@ const AdminYearPage = () => {
                                                 key={lesson.id}
                                                 item={lesson}
                                                 onUpdate={(id, field, value) =>
-                                                    store.updateLesson(yearId, selectedContainer, selectedModule, id, field, value)
+                                                    store.updateLesson(yearId, selectedContainer, selectedModuleId, id, field, value)
                                                 }
                                                 onDelete={(id) =>
-                                                    store.deleteLesson(yearId, selectedContainer, selectedModule, id)
+                                                    store.deleteLesson(yearId, selectedContainer, selectedModuleId, id)
                                                 }
                                                 titlePlaceholder="اسم الدرس"
                                             />
                                         ))}
                                         <button
-                                            onClick={() => store.addLesson(yearId, selectedContainer, selectedModule)}
+                                            onClick={handleAddLesson}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-primary-400 bg-primary-500/5 border border-dashed border-primary-500/20 hover:bg-primary-500/10 transition-all"
                                         >
                                             <Plus size={16} />
@@ -510,16 +725,16 @@ const AdminYearPage = () => {
                                                 key={exam.id}
                                                 item={exam}
                                                 onUpdate={(id, field, value) =>
-                                                    store.updateExam(yearId, selectedContainer, selectedModule, id, field, value)
+                                                    store.updateExam(yearId, selectedContainer, selectedModuleId, id, field, value)
                                                 }
                                                 onDelete={(id) =>
-                                                    store.deleteExam(yearId, selectedContainer, selectedModule, id)
+                                                    store.deleteExam(yearId, selectedContainer, selectedModuleId, id)
                                                 }
                                                 titlePlaceholder="اسم الامتحان"
                                             />
                                         ))}
                                         <button
-                                            onClick={() => store.addExam(yearId, selectedContainer, selectedModule)}
+                                            onClick={() => store.addExam(yearId, selectedContainer, selectedModuleId)}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-primary-400 bg-primary-500/5 border border-dashed border-primary-500/20 hover:bg-primary-500/10 transition-all"
                                         >
                                             <Plus size={16} />
@@ -537,3 +752,5 @@ const AdminYearPage = () => {
 };
 
 export default AdminYearPage;
+
+// ✅ Done: AdminYearPage.jsx

@@ -1,9 +1,11 @@
 // PATH: src/components/Layout/YearSidebar.jsx
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion'; // MODIFIED: added AnimatePresence for icon transitions
+import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from 'lucide-react';
-import useAdminStore from '@store/useAdminStore'; // MODIFIED: reads from store — reflects admin changes instantly
+import { useEffect } from 'react'; // ADDED: needed for mount fetch
+import useAdminStore from '@store/useAdminStore';
+import { years } from '@data/academicData'; // ADDED: static year definition
 
 /**
  * Year selector sidebar (desktop) / horizontal tabs (mobile).
@@ -12,13 +14,25 @@ import useAdminStore from '@store/useAdminStore'; // MODIFIED: reads from store 
 const YearSidebar = () => {
     const navigate = useNavigate();
     const { yearId } = useParams();
-    const { data: years } = useAdminStore(); // MODIFIED: reads from store instead of static file
-    const activeYear = yearId ? `year-${yearId}` : null; // MODIFIED: no default — null when no year in URL
+    // MODIFIED: get static years directly from academicData instead of store
+
+    // Removed isLoading, error, and loadData from useAdminStore
+    //    const { data: years, isLoading, error, loadData } = useAdminStore();
+    const activeYear = yearId ? `year-${yearId}` : null;
+
+    // ADDED: load API data in background so it's ready for ContentPanel/ModuleDrawer, but don't bock sidebar
+    const { loadData, isLoading, error } = useAdminStore();
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleYearClick = (id) => {
         const numId = id.replace('year-', '');
         navigate(`/year/${numId}`);
     };
+
+    // REMOVED: skeleton for sidebar while loading (now always instant)
+    // REMOVED: error state for sidebar (now always instant)
 
     return (
         <>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen, FileText, ExternalLink, Lock } from 'lucide-react';
 import useAppStore from '@store/useAppStore';
+import useAdminStore from '@store/useAdminStore'; // ADDED: to read API loading state
 
 /**
  * Full-height slide-in drawer from the right.
@@ -14,6 +15,9 @@ const ModuleDrawer = () => {
     const selectedModule = useAppStore((s) => s.selectedModule);
     const closeModule = useAppStore((s) => s.closeModule);
     const [activeTab, setActiveTab] = useState('lessons');
+
+    // ADDED: get isLoading from the admin store to render the skeleton
+    const { isLoading } = useAdminStore();
 
     // Close on Esc key
     const handleKeyDown = useCallback(
@@ -115,22 +119,41 @@ const ModuleDrawer = () => {
                         {/* Content list */}
                         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
                             <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={activeTab}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="space-y-2"
-                                >
-                                    {items.length === 0 ? (
-                                        <EmptyState tab={activeTab} />
-                                    ) : (
-                                        items.map((item, idx) => (
-                                            <ItemRow key={item.id || idx} item={item} index={idx} />
-                                        ))
-                                    )}
-                                </motion.div>
+                                {/* ADDED: Check if API is still loading to show skeletons */}
+                                {isLoading ? (
+                                    <motion.div
+                                        key={`loading-${activeTab}`}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="space-y-3 mt-4"
+                                    >
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl bg-white/5 dark:bg-navy-800/20">
+                                                <div className="w-9 h-9 rounded-lg bg-navy-500/10 animate-pulse shrink-0" />
+                                                <div className="h-4 bg-navy-500/10 rounded w-2/3 animate-pulse" />
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key={activeTab}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="space-y-2"
+                                    >
+                                        {items.length === 0 ? (
+                                            <EmptyState tab={activeTab} />
+                                        ) : (
+                                            items.map((item, idx) => (
+                                                <ItemRow key={item.id || idx} item={item} index={idx} />
+                                            ))
+                                        )}
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
                         </div>
                     </motion.aside>

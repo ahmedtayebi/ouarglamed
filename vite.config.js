@@ -12,7 +12,17 @@ export default defineConfig({
             '@hooks': resolve(__dirname, './src/hooks'),
             '@store': resolve(__dirname, './src/store'),
             '@assets': resolve(__dirname, './src/assets'),
-            '@admin': resolve(__dirname, './src/admin'), // ADDED: admin folder alias
+            '@admin': resolve(__dirname, './src/admin'),
+            '@services': resolve(__dirname, './src/services'),
+        },
+    },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+                secure: false,
+            },
         },
     },
     base: './',

@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, User, Cross, AlertCircle } from 'lucide-react';
-import { ADMIN, AUTH_KEY } from '@admin/adminConfig';
+import { AUTH_KEY } from '@admin/adminConfig';
+import { api } from '@services/api';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -21,17 +22,17 @@ const AdminLogin = () => {
         }
     }, [navigate]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
-        if (username === ADMIN.username && password === ADMIN.password) {
-            // ADDED: store simple obfuscated token in sessionStorage
-            const token = btoa(username + ':' + Date.now());
-            sessionStorage.setItem(AUTH_KEY, token);
+        try {
+            // MODIFIED: real api login
+            const res = await api.post('/api/auth/login', { username, password });
+            sessionStorage.setItem(AUTH_KEY, res.token);
             navigate('/admin', { replace: true });
-        } else {
-            // ADDED: shake animation on failed login
+        } catch (err) {
+            // MODIFIED: shake animation on failed login
             setError('بيانات خاطئة');
             setShake(true);
             setTimeout(() => setShake(false), 600);

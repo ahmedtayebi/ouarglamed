@@ -44,19 +44,15 @@
 
 /* ── Component utilities ── */
 @layer components {
+
   /* Glass card */
   .glass-card {
-    @apply bg-white/5 dark:bg-navy-800/40 
-      backdrop-blur-sm border border-white/10 
-      rounded-2xl;
+    @apply bg-white/5 dark:bg-navy-800/40 backdrop-blur-sm border border-white/10 rounded-2xl;
   }
 
   /* Glass card hover */
   .glass-card-hover {
-    @apply glass-card 
-      hover:bg-white/10 dark:hover:bg-navy-700/50 
-      hover:border-primary-500/20 
-      transition-all duration-300;
+    @apply glass-card hover:bg-white/10 dark:hover:bg-navy-700/50 hover:border-primary-500/20 transition-all duration-300;
   }
 }
 
@@ -65,6 +61,7 @@
   0% {
     transform: translateX(100%);
   }
+
   100% {
     transform: translateX(-100%);
   }

@@ -1,9 +1,9 @@
 // PATH: src/admin/pages/AdminDashboard.jsx
 // ADDED: Admin dashboard with stats overview, completion table, and quick actions
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Layers, Library, FileText, Download, Upload, RotateCcw, Plus, AlertTriangle } from 'lucide-react';
+import { BookOpen, Layers, Library, FileText, Download, Upload, RotateCcw, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import useAdminStore from '@store/useAdminStore';
 
 /**
@@ -99,10 +99,18 @@ const computeStats = (data) => {
 };
 
 const AdminDashboard = () => {
-    const { data, exportJSON, importJSON, resetToDefault } = useAdminStore();
+    const { data, isLoading, error, loadData, exportJSON, importJSON, resetToDefault } = useAdminStore();
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [importMsg, setImportMsg] = useState(null);
     const fileRef = useRef(null);
+
+    // ADDED: fetch data on mount if empty
+    useEffect(() => {
+        if (data.length === 0 && !isLoading) {
+            loadData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const stats = computeStats(data);
 
@@ -137,6 +145,24 @@ const AdminDashboard = () => {
         resetToDefault();
         setShowResetConfirm(false);
     };
+
+    // ADDED: load/error states
+    if (isLoading && data.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 size={40} className="text-primary-500 animate-spin" />
+                <p className="text-lg text-navy-400 font-semibold">جاري تحميل البيانات...</p>
+            </div>
+        );
+    }
+
+    if (error && data.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <p className="text-lg text-red-500 font-semibold">خطأ في تحميل البيانات</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">

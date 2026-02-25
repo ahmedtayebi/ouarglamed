@@ -1,0 +1,156 @@
+[
+  {
+    "id": "year-1",
+    "label": "First Year",
+    "color": "#10b981",
+    "icon": "book",
+    "structure": "Semesters",
+    "createdAt": "2026-02-25T09:07:27.362+00:00",
+    "updatedAt": "2026-02-25T09:07:27.362+00:00",
+    "semesters": [
+      {
+        "id": "s1",
+        "label": "Semester 1",
+        "yearId": "year-1",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "s2",
+        "label": "Semester 2",
+        "yearId": "year-1",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      }
+    ],
+    "units": [],
+    "standaloneModules": []
+  },
+  {
+    "id": "year-2",
+    "label": "Second Year",
+    "color": "#3b82f6",
+    "icon": "books",
+    "structure": "Units",
+    "createdAt": "2026-02-25T09:07:27.362+00:00",
+    "updatedAt": "2026-02-25T09:07:27.362+00:00",
+    "semesters": [],
+    "units": [
+      {
+        "id": "u1-y2",
+        "label": "cardiovasculaire",
+        "yearId": "year-2",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": [
+          {
+            "id": "mod-1772009752777-v2odt",
+            "title": "anatomie",
+            "isShared": false,
+            "isStandalone": false,
+            "unitId": "u1-y2",
+            "semesterId": null,
+            "standaloneYearId": null,
+            "createdAt": "2026-02-25T09:07:27.362+00:00",
+            "updatedAt": "2026-02-25T09:07:27.362+00:00",
+            "lessons": [],
+            "exams": []
+          },
+          {
+            "id": "mod-1772010436332-vgg94",
+            "title": "histologie",
+            "isShared": false,
+            "isStandalone": false,
+            "unitId": "u1-y2",
+            "semesterId": null,
+            "standaloneYearId": null,
+            "createdAt": "2026-02-25T09:07:27.362+00:00",
+            "updatedAt": "2026-02-25T09:07:27.362+00:00",
+            "lessons": [],
+            "exams": []
+          }
+        ]
+      },
+      {
+        "id": "u2-y2",
+        "label": "degestive",
+        "yearId": "year-2",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u3-y2",
+        "label": "urinaire",
+        "yearId": "year-2",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u4-y2",
+        "label": "Unit 4",
+        "yearId": "year-2",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u5-y2",
+        "label": "Unit 5",
+        "yearId": "year-2",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      }
+    ],
+    "standaloneModules": []
+  },
+  {
+    "id": "year-3",
+    "label": "Third Year",
+    "color": "#f59e0b",
+    "icon": "graduation-cap",
+    "structure": "Units",
+    "createdAt": "2026-02-25T09:07:27.362+00:00",
+    "updatedAt": "2026-02-25T09:07:27.362+00:00",
+    "semesters": [],
+    "units": [
+      {
+        "id": "u1-y3",
+        "label": "Unit 1",
+        "yearId": "year-3",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u2-y3",
+        "label": "Unit 2",
+        "yearId": "year-3",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u3-y3",
+        "label": "Unit 3",
+        "yearId": "year-3",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      },
+      {
+        "id": "u4-y3",
+        "label": "Unit 4",
+        "yearId": "year-3",
+        "createdAt": "2026-02-25T09:07:27.362+00:00",
+        "updatedAt": "2026-02-25T09:07:27.362+00:00",
+        "modules": []
+      }
+    ],
+    "standaloneModules": []
+  }
+]

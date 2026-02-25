@@ -3,6 +3,7 @@
 import { Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { Toaster } from 'react-hot-toast'; // ADDED: for save notifications
 import Navbar from '@components/Navbar/Navbar';
 import NewsTicker from '@components/Navbar/NewsTicker';
 import YearSidebar from '@components/Layout/YearSidebar';
@@ -56,7 +57,7 @@ const RootLayout = () => (
  * Study Zone layout: year sidebar + content panel (the 3-Layer shell).
  */
 const StudyZone = () => (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-6">
         {/* Mobile tabs at top */}
         <div className="lg:hidden">
             <YearSidebar />
@@ -164,6 +165,7 @@ const router = createBrowserRouter([
 
 const App = () => (
     <HelmetProvider>
+        <Toaster position="top-center" /> {/* ADDED: global toast notifications */}
         <RouterProvider router={router} />
     </HelmetProvider>
 );

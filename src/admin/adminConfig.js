@@ -8,9 +8,9 @@
  *
  * Change these values before deploying:
  */
-export const ADMIN = {
-    username: 'admin', // TO_BE_CHANGED: set your admin username
-    password: 'medguid2025', // TO_BE_CHANGED: set your admin password
-};
+/**
+ * ⚠️ ADMIN CREDENTIALS REMOVED FOR SECURITY.
+ * Authentication logic is now handled securely via the backend API API.
+ */
 
 export const AUTH_KEY = 'medguid-admin-auth'; // ADDED: sessionStorage key for auth token
