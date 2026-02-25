@@ -21,9 +21,17 @@ const app = express();
 app.use(helmet());
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177'],
-    credentials: true
-})); // MODIFIED: expanded allowed origins to support more Vite restart ports
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.options('*', cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json({ limit: '50mb' }));
 
 // Apply rate limiting to login endpoint specifically
@@ -43,6 +51,10 @@ app.use('/api/semesters', semesterRoutes);
 
 app.get('/', (req, res) => {
     res.send('MedGuid API is running...');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ ok: true });
 });
 
 // Error Handling
